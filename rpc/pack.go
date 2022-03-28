@@ -76,11 +76,15 @@ func (pk *_pack) GetDirective() string {
 }
 
 func (pk *_pack) GetRemainingTime(nowMs uint64) (uint16, bool) {
-
-	if nowMs < pk.InitiatedTime {
+	if nowMs >= pk.InitiatedTime {
+		elapseMs := nowMs - pk.InitiatedTime
+		if uint64(pk.RemainingTime) > elapseMs {
+			return pk.RemainingTime - uint16(elapseMs), true
+		}
 		return 0, false
+	} else {
+		return pk.RemainingTime, false
 	}
-	return pk.Header.RemainingTime, true
 }
 
 func (pk *_pack) GetInitiatedTime() uint64 {
