@@ -119,13 +119,7 @@ func (session *IslandSession) ReplyFlow(reply []byte) fsc.FlowStateCode {
 	return fsc.FlowFinished
 }
 
-func (session *IslandSession) RecvPack(recvPackTimeout time.Duration) (*FlowContext, fsc.FlowStateCode) {
-	ctx := &FlowContext{
-		ctx:             nil,
-		BeginAcceptTime: time.Now(),
-	}
-
-	deadline := time.Now().Add(recvPackTimeout)
+func (session *IslandSession) RecvPack(deadline time.Time) (FlowPack, fsc.FlowStateCode) {
 	err := session.conn.SetReadDeadline(deadline)
 	if err != nil {
 		if logFatal != nil {
@@ -162,12 +156,12 @@ func (session *IslandSession) RecvPack(recvPackTimeout time.Duration) (*FlowCont
 		}
 		return nil, fsc.FlowRecvNotFinished
 	}
-	ctx.FlowPack = pk
+
 	pk.DstAddr = session.conn.LocalAddr().String()
 	pk.SrcAddr = session.conn.RemoteAddr().String()
 
 	if logDebug != nil {
-		logDebug("received new pack[flowTracingId=%s,SrcAddr=%s,DstAddr=%s] directiveNodes=%v dataLength=[%v] extensionNode=[%v]",
+		logDebug("received new pack[FlowTracingId=%s,SrcAddr=%s,DstAddr=%s] directiveNodes=%v dataLength=[%v] extensionNode=[%v]",
 			pk.flowTracingId, pk.SrcAddr, pk.DstAddr,
 			pk.DirectiveNotes, pk.DataLength, pk.ExtensionNotes)
 	}
@@ -199,8 +193,8 @@ func (session *IslandSession) RecvPack(recvPackTimeout time.Duration) (*FlowCont
 	pk.Data = data[pk.GetDirectiveLen() : pk.GetDirectiveLen()+pk.GetExtensionLen()]
 	pk.Extension = data[pk.GetDirectiveLen()+pk.GetExtensionLen():]
 	if logDebug != nil {
-		logDebug("receive data finished[flowTracingId=%s,directive=%s,extension=%s]", pk.flowTracingId, pk.Directive, pk.Extension)
+		logDebug("receive data finished[FlowTracingId=%s,directive=%s,extension=%s]", pk.flowTracingId, pk.Directive, pk.Extension)
 	}
 
-	return ctx, fsc.FlowFinished
+	return pk, fsc.FlowFinished
 }

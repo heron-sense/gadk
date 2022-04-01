@@ -75,7 +75,10 @@ func (pk *_pack) GetDirective() string {
 	return ""
 }
 
-func (pk *_pack) GetRemainingTime(nowMs uint64) (uint16, bool) {
+func (pk *_pack) GetRemainingTime() uint16 {
+	return pk.RemainingTime
+}
+func (pk *_pack) CalRemainingTime(nowMs uint64) (uint16, bool) {
 	if nowMs >= pk.InitiatedTime {
 		elapseMs := nowMs - pk.InitiatedTime
 		if uint64(pk.RemainingTime) > elapseMs {
@@ -135,6 +138,8 @@ func (pk *_pack) GenReply(directive []byte, initiatedTime uint64, remainingTime 
 		StateCode:       stateCode,
 		PackSignature:   [PackSignatureLength]uint8{},
 	}
+
+	logger.Vital("reply[%+v]", replyHeader)
 
 	totalLength := int(PackHeaderLength) + len(directive) + len(data) + len(extension)
 	buf := bytes.NewBuffer(make([]byte, 0, totalLength))

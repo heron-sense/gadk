@@ -8,11 +8,10 @@ import (
 )
 
 type FlowContext struct {
-	ctx context.Context
-	FlowPack
-	BeginAcceptTime time.Time
-	AcceptTime      time.Time
-	conn            *IslandSession
+	Ctx           context.Context
+	InitiateTime  time.Time
+	FlowTracingId [FlowTracingIdLength]byte
+	RemainingTime uint16
 }
 
 func (fc FlowContext) Deadline() (time.Time, bool) {
@@ -32,7 +31,7 @@ func (fc FlowContext) Value(key interface{}) interface{} {
 }
 
 func (ctx *FlowContext) Reply(pk FlowPack, data []byte) (FlowPack, fsc.FlowStateCode) {
-	remainingTime, exceed := ctx.GetRemainingTime(uint64(time.Now().UnixNano() / 1e6))
+	remainingTime, exceed := pk.CalRemainingTime(uint64(time.Now().UnixNano() / 1e6))
 	if exceed {
 		remainingTime = 0
 	}
@@ -41,7 +40,7 @@ func (ctx *FlowContext) Reply(pk FlowPack, data []byte) (FlowPack, fsc.FlowState
 		Header: Header{
 			FlowTracingId:   [FlowTracingIdLength]byte{},
 			TrackSequence:   pk.GetTrackSequence(),
-			InitiatedTime:   uint64(ctx.AcceptTime.UnixNano() / 1e6),
+			InitiatedTime:   uint64(ctx.InitiateTime.UnixNano() / 1e6),
 			RemainingTime:   remainingTime,
 			DirectiveNotes:  0,
 			DataRepFormat:   0,
@@ -54,7 +53,7 @@ func (ctx *FlowContext) Reply(pk FlowPack, data []byte) (FlowPack, fsc.FlowState
 		},
 		Data: data,
 	}
-	reply.InitiatedTime = uint64(ctx.AcceptTime.UnixNano() / 1e6)
+	reply.InitiatedTime = uint64(ctx.InitiateTime.UnixNano() / 1e6)
 	return reply, fsc.FlowFinished
 }
 
@@ -62,40 +61,35 @@ func InitJaeger(service string) (int, io.Closer) {
 	return 0, nil
 }
 
-func NewFlowContext(directive string, flowTracingId [FlowTracingIdLength]byte, stateCode uint32, data []byte, extension []byte) (*FlowContext, fsc.FlowStateCode) {
+func NewPack(fCtx *FlowContext, directive string, stateCode uint32, data []byte, extension []byte) (FlowPack, fsc.FlowStateCode) {
 	length := uint32(len(data))
-	fCtx := &FlowContext{
-		ctx: nil,
-		FlowPack: &_pack{
-			Header: Header{
-				FlowTracingId:  flowTracingId,
-				TrackSequence:  0,
-				InitiatedTime:  0,
-				RemainingTime:  0,
-				DirectiveNotes: uint16(len(directive)),
-				DataRepFormat:  0,
-				DataLength: [3]uint8{
-					uint8(length >> 16),
-					uint8(length >> 8),
-					uint8(length),
-				},
-				ExtensionNotes:  uint16(len(extension)),
-				RoutingStrategy: 0,
-				Reserved:        0,
-				StateCode:       stateCode,
-				PackSignature:   [PackSignatureLength]uint8{},
+	nowMs := fCtx.InitiateTime.UnixNano() / 1e6
+	pack := &_pack{
+		Header: Header{
+			FlowTracingId:  fCtx.FlowTracingId,
+			TrackSequence:  0,
+			InitiatedTime:  uint64(nowMs),
+			RemainingTime:  fCtx.RemainingTime,
+			DirectiveNotes: uint16(len(directive)),
+			DataRepFormat:  0,
+			DataLength: [3]uint8{
+				uint8(length >> 16),
+				uint8(length >> 8),
+				uint8(length),
 			},
-			DstAddr:       "",
-			SrcAddr:       "",
-			flowTracingId: string(flowTracingId[:]),
-			Directive:     directive,
-			Data:          data,
-			Extension:     extension,
+			ExtensionNotes:  uint16(len(extension)),
+			RoutingStrategy: 0,
+			Reserved:        0,
+			StateCode:       stateCode,
+			PackSignature:   [PackSignatureLength]uint8{},
 		},
-		BeginAcceptTime: time.Time{},
-		AcceptTime:      time.Time{},
-		conn:            nil,
+		DstAddr:       "",
+		SrcAddr:       "",
+		flowTracingId: string(fCtx.FlowTracingId[:]),
+		Directive:     directive,
+		Data:          data,
+		Extension:     extension,
 	}
 
-	return fCtx, fsc.FlowFinished
+	return pack, fsc.FlowFinished
 }

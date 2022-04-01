@@ -21,10 +21,10 @@ type island struct {
 	AcceptSuc     uint64
 }
 
-func (i *island) ProcessUnknown(rpcConn *rpc.IslandSession, pk *rpc.FlowContext, acceptTime time.Time) fsc.FlowStateCode {
+func (i *island) ProcessUnknown(rpcConn *rpc.IslandSession, pk rpc.FlowPack, acceptTime time.Time) fsc.FlowStateCode {
 	defer rpcConn.Close()
 
-	remainingTime, expired := pk.GetRemainingTime(uint64(acceptTime.UnixNano() / 1e6))
+	remainingTime, expired := pk.CalRemainingTime(uint64(acceptTime.UnixNano() / 1e6))
 	if expired {
 		remainingTime = 0
 	}
@@ -33,19 +33,19 @@ func (i *island) ProcessUnknown(rpcConn *rpc.IslandSession, pk *rpc.FlowContext,
 		uint32(fsc.FlowSubroutineUndefined), nil, nil)
 	if !fsCode.Finished() {
 		logger.Alert("failed to gen reply for pack[%+v], which specified unknown subroutine[%s]",
-			pk.FlowPack, pk.GetDirective())
+			pk, pk.GetDirective())
 		return fsCode
 	}
 
 	fsCode = rpcConn.ReplyFlow(replyData)
 	if !fsCode.Finished() {
 		logger.Alert("failed reply pack[%+v], which specified unknown subroutine[%s]",
-			pk.FlowPack, pk.GetDirective())
+			pk, pk.GetDirective())
 		return fsCode
 	}
 
 	logger.Alert("reply pack[%+v], which specified unknown subroutine[%s]",
-		pk.FlowPack, pk.GetDirective())
+		pk, pk.GetDirective())
 	return fsc.FlowFinished
 }
 
@@ -56,7 +56,7 @@ func (i *island) ProcessConn(conn net.Conn, timeout time.Duration) fsc.FlowState
 	rpcConn := rpc.NewNetConn(conn)
 	for {
 		startTime := time.Now()
-		pk, fsCode := rpcConn.RecvPack(timeout)
+		pk, fsCode := rpcConn.RecvPack(startTime.Add(timeout))
 		if !fsCode.Finished() {
 			logger.Error("recv over conn err:%d", fsCode)
 			break
@@ -65,8 +65,8 @@ func (i *island) ProcessConn(conn net.Conn, timeout time.Duration) fsc.FlowState
 			logger.Error("conn closed")
 			break
 		}
-		pk.BeginAcceptTime = startTime
-		pk.AcceptTime = time.Now()
+		//pk.BeginAcceptTime = startTime
+		//pk.AcceptTime = time.Now()
 
 		routine, exist := i.SubroutineMap[pk.GetDirective()]
 		if !exist {

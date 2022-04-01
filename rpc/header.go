@@ -48,7 +48,8 @@ type Header struct {
 type FlowPack interface {
 	GetFlowTracingId() string
 	GetTrackSequence() uint32
-	GetRemainingTime(nowMs uint64) (uint16, bool)
+	CalRemainingTime(nowMs uint64) (uint16, bool)
+	GetRemainingTime() uint16
 	GetInitiatedTime() uint64
 	GetData() []byte
 	GetDirective() string

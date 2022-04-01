@@ -7,7 +7,7 @@ import (
 )
 
 type Subroutine interface {
-	Handle(pack *rpc.FlowContext) ([]byte, fsc.FlowStateCode)
+	Handle(pack rpc.FlowPack) ([]byte, fsc.FlowStateCode)
 }
 
 type subroutineProfile struct {
