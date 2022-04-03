@@ -15,6 +15,7 @@ type _pack struct {
 	SrcAddr       string
 	flowTracingId string
 	Directive     string
+	Digest        string
 	Data          []byte
 	Extension     []byte
 }
@@ -118,12 +119,16 @@ func (pk *_pack) Serialize() ([]byte, fsc.FlowStateCode) {
 	sign := lib_enhanced.He32ofRaw(sum[:])
 
 	copy(serialized[PackHeaderLength-PackSignatureLength:], sign)
-	logger.Vital("pack[%v],directive=%s,extension=%s,sign=%s", serialized, serialized[PackHeaderLength:PackHeaderLength+10], pk.Extension, sign)
-
+	pk.Digest = string(sign)
 	return serialized, fsc.FlowFinished
 }
 
 func (pk *_pack) GenReply(directive []byte, initiatedTime uint64, remainingTime uint16, stateCode uint32, data []byte, extension []byte) ([]byte, fsc.FlowStateCode) {
+	dataLen := len(data)
+	if (dataLen) > 0xFFFFFF {
+		return nil, fsc.FlowDataLength
+	}
+
 	replyHeader := &Header{
 		FlowTracingId:   pk.FlowTracingId,
 		TrackSequence:   pk.TrackSequence,
@@ -131,7 +136,7 @@ func (pk *_pack) GenReply(directive []byte, initiatedTime uint64, remainingTime 
 		RemainingTime:   remainingTime,
 		DirectiveNotes:  uint16(len(directive)),
 		DataRepFormat:   0,
-		DataLength:      [3]uint8{},
+		DataLength:      [3]uint8{uint8(dataLen >> 16), uint8(dataLen >> 8), uint8(dataLen)},
 		ExtensionNotes:  uint16(len(extension)),
 		RoutingStrategy: 0,
 		Reserved:        0,
@@ -139,9 +144,7 @@ func (pk *_pack) GenReply(directive []byte, initiatedTime uint64, remainingTime 
 		PackSignature:   [PackSignatureLength]uint8{},
 	}
 
-	logger.Vital("reply[%+v]", replyHeader)
-
-	totalLength := int(PackHeaderLength) + len(directive) + len(data) + len(extension)
+	totalLength := PackHeaderLength + len(directive) + len(data) + len(extension)
 	buf := bytes.NewBuffer(make([]byte, 0, totalLength))
 	if err := binary.Write(buf, binary.BigEndian, replyHeader); err != nil {
 		logger.Error("write err:%s", err)

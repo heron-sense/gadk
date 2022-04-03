@@ -25,12 +25,12 @@ func (session *IslandSession) Dispatch(fCtx *FlowContext, method string, locatio
 		return nil, fsCode
 	}
 
-	logVital("send :%+v", serialized)
+	logVital("Pack[FlowTracingID=%s,Digest=%s] was Sent Successfully", req.GetFlowTracingId(), req.Digest)
 
 	replyPack, fsCode := session.RecvPack(deadline)
 	if !fsCode.Finished() {
 		if logError != nil {
-			logError("recv err:%s", fsCode)
+			logError("Rcv err:%s", fsCode)
 		}
 		return nil, fsCode
 	}

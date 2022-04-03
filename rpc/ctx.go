@@ -61,7 +61,7 @@ func InitJaeger(service string) (int, io.Closer) {
 	return 0, nil
 }
 
-func NewPack(fCtx *FlowContext, directive string, stateCode uint32, data []byte, extension []byte) (FlowPack, fsc.FlowStateCode) {
+func NewPack(fCtx *FlowContext, directive string, stateCode uint32, data []byte, extension []byte) (*_pack, fsc.FlowStateCode) {
 	length := uint32(len(data))
 	nowMs := fCtx.InitiateTime.UnixNano() / 1e6
 	pack := &_pack{

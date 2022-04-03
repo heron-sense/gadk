@@ -16,7 +16,6 @@ type IslandSession struct {
 	addr         string
 	createTime   uint64
 	conn         net.Conn
-	peerRunID    []uint8
 	sendBytes    uint64
 	rcvBytes     uint64
 	sndTimes     uint32
@@ -88,7 +87,6 @@ func (session *IslandSession) SendPack(pack []byte) fsc.FlowStateCode {
 		return fsc.FlowSendNotFinished
 	}
 
-	logError("%v, bytes sent:%d", pack, nSent)
 	return fsc.FlowFinished
 }
 
@@ -190,8 +188,8 @@ func (session *IslandSession) RecvPack(deadline time.Time) (FlowPack, fsc.FlowSt
 
 	directive := data[:pk.GetDirectiveLen()]
 	pk.Directive = *(*string)(unsafe.Pointer(&directive))
-	pk.Data = data[pk.GetDirectiveLen() : pk.GetDirectiveLen()+pk.GetExtensionLen()]
-	pk.Extension = data[pk.GetDirectiveLen()+pk.GetExtensionLen():]
+	pk.Data = data[pk.GetDirectiveLen() : pk.GetDirectiveLen()+pk.GetDataLen()]
+	pk.Extension = data[pk.GetDirectiveLen()+pk.GetDataLen():]
 	if logDebug != nil {
 		logDebug("receive data finished[FlowTracingId=%s,directive=%s,extension=%s]", pk.flowTracingId, pk.Directive, pk.Extension)
 	}
