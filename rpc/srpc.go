@@ -1,15 +1,16 @@
 package rpc
 
 import (
-	fsc "github.com/heron-sense/gadk/flow-state-code"
 	"time"
+
+	fsc "github.com/heron-sense/gadk/flow-state-code"
 )
 
-func (session *IslandSession) Dispatch(fCtx *FlowContext, method string, location []byte, msg []byte) ([]byte, fsc.FlowStateCode) {
+func (session *IslandSession) Dispatch(fCtx *FlowContext, method string, location []byte, msg []byte, ext []byte) ([]byte, fsc.FlowStateCode) {
 	deadline := fCtx.InitiateTime.Add(time.Duration(fCtx.RemainingTime) * time.Millisecond)
 	directive := GenDirective(method, location)
 
-	req, fsCode := NewPack(fCtx, directive, 0, msg, nil)
+	req, fsCode := NewPack(fCtx, directive, 0, msg, ext)
 	if !fsCode.Finished() {
 		if logError != nil {
 			logError("failed to create flow context: fsCode=%d", fsCode)
@@ -39,14 +40,11 @@ func (session *IslandSession) Dispatch(fCtx *FlowContext, method string, locatio
 	/**
 	 * 发送时间 =
 	 */
-	sndTime := time.UnixMilli(int64(replyPack.GetInitiatedTime())).Sub(fCtx.InitiateTime).Milliseconds()
-	procTime := fCtx.RemainingTime - replyPack.GetRemainingTime() - uint16(sndTime)
-	rtt := uint16(0)
-	if uint16(finishTime.Sub(fCtx.InitiateTime).Milliseconds()) > procTime {
-		rtt = uint16(finishTime.Sub(fCtx.InitiateTime).Milliseconds()) - procTime
-	}
+	rtt := uint16(finishTime.Sub(fCtx.InitiateTime).Milliseconds())
+	procTime := fCtx.RemainingTime - replyPack.GetRemainingTime() - rtt
+
 	if logVital != nil {
-		logVital("peer process time[%d], rtt[%d]", procTime, rtt)
+		logVital("peer process time[%d], rtt[%d],data[%s]", procTime, rtt, string(replyPack.GetData()))
 	}
 
 	return replyPack.GetData(), fsCode

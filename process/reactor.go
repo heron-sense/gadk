@@ -4,6 +4,8 @@ import (
 	fsc "github.com/heron-sense/gadk/flow-state-code"
 	"github.com/heron-sense/gadk/logger"
 	"github.com/heron-sense/gadk/rpc"
+	"github.com/opentracing/opentracing-go"
+	"io"
 	"math"
 	"net"
 	"syscall"
@@ -15,7 +17,12 @@ var (
 )
 
 type island struct {
+	Tracing struct {
+		Tracer opentracing.Tracer
+		io.Closer
+	}
 	SubroutineMap map[string]*subroutineProfile
+	name          string
 	addr          string
 	AcceptErr     uint64
 	AcceptSuc     uint64
@@ -50,6 +57,7 @@ func (i *island) ProcessUnknown(rpcConn *rpc.IslandSession, pk rpc.FlowPack, acc
 }
 
 func (i *island) ProcessConn(conn net.Conn, timeout time.Duration) fsc.FlowStateCode {
+
 	logger.Vital("new conn[%s] from remote[%s] accepted",
 		conn.LocalAddr().Network(),
 		conn.RemoteAddr().Network())

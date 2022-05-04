@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 )
 
 type Option func(cli *_client)
@@ -56,7 +57,42 @@ func GenDirective(method string, location string) []byte {
 	return directive
 }
 
+func ParseExtension() http.Header {
+	ext := []byte("a=b&c=d&e=")
+	hdr := http.Header{}
+
+	var kPos, vPos int
+	for idx := 0; idx < len(ext); idx++ {
+		switch chr := ext[idx]; chr {
+		case '&':
+			if vPos > 0 {
+				key := string(ext[kPos : vPos-1])
+				val := string(ext[vPos:idx])
+				fmt.Printf("%s=%s\n", key, val)
+				hdr.Set(key, val)
+			}
+			kPos = idx + 1
+			vPos = 0
+		case '=':
+			vPos = idx + 1
+			continue
+		}
+	}
+	if vPos > 0 {
+		key := string(ext[kPos : vPos-1])
+		val := string(ext[vPos:])
+		fmt.Printf("%s=%s\n", key, val)
+		hdr.Set(key, val)
+	}
+
+	return hdr
+}
+
 func main() {
+	fmt.Printf("%s\n", string([]byte("abcd")[1:3]))
+	ParseExtension()
+	fmt.Printf("finished")
+	return
 	NewClient(WithStatefulRoute(true), WithTimeout(32)).DoSomething()
 	fmt.Println(incr())
 }

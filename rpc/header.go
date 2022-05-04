@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	fsc "github.com/heron-sense/gadk/flow-state-code"
+	"net/http"
 	"unsafe"
 )
 
@@ -46,6 +47,7 @@ type Header struct {
 }
 
 type FlowPack interface {
+	GetExtension() http.Header
 	GetFlowTracingId() string
 	GetTrackSequence() uint32
 	CalRemainingTime(nowMs uint64) (uint16, bool)
