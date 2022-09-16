@@ -15,7 +15,7 @@ func Fatal(format string, argv ...interface{}) {
 }
 
 func Vital(format string, argv ...interface{}) {
-	rec := genRecord("VITAL", format, argv...)
+	rec := genRecord("VITAL-", format, argv...)
 	select {
 	case logChan <- rec:
 	default:
