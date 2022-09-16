@@ -1,4 +1,4 @@
-module github.com/heron-sense/gadk
+module github.com/heron-sense/gadk.git
 
 go 1.14
 
