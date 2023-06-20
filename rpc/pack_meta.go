@@ -31,7 +31,7 @@ const (
 		ReservedLength + StateCodeLength + PackSignatureLength
 )
 
-type Header struct {
+type PackMeta struct {
 	FlowTracingId   [FlowTracingIdLength]uint8 //7 bytes run-id + 13-bytes timestamp + 4 bytes rand
 	TrackSequence   uint32                     //2bits(reserved) + 5bits + 5bits + 5bits + 5bits + 5bits + 5bits
 	InitiatedTime   uint64                     //unix timestamp, ms
@@ -62,8 +62,8 @@ type FlowPack interface {
 	GenReply(directive []byte, initiatedTime uint64, remainingTime uint16, stateCode uint32, data []byte, extension []byte) ([]byte, fsc.FlowStateCode)
 }
 
-func GenTrackHeader(traceID [FlowTracingIdLength]byte, strategy Strategy) *Header {
-	hdr := &Header{
+func GenTrackHeader(traceID [FlowTracingIdLength]byte, strategy Strategy) *PackMeta {
+	hdr := &PackMeta{
 		FlowTracingId: traceID,
 		TrackSequence: uint32(strategy),
 	}
@@ -71,9 +71,9 @@ func GenTrackHeader(traceID [FlowTracingIdLength]byte, strategy Strategy) *Heade
 	return hdr
 }
 
-func ParseHeader(buf [PackHeaderLength]byte) (*_pack, fsc.FlowStateCode) {
+func ParseMeta(buf [PackHeaderLength]byte) (*_pack, fsc.FlowStateCode) {
 	pk := &_pack{}
-	err := binary.Read(bytes.NewReader(buf[:]), binary.BigEndian, &pk.Header)
+	err := binary.Read(bytes.NewReader(buf[:]), binary.BigEndian, &pk.PackMeta)
 	if err != nil {
 		if logError != nil {
 			logError("err:%s", err)

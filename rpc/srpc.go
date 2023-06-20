@@ -26,7 +26,9 @@ func (session *IslandSession) Dispatch(fCtx *FlowContext, method string, locatio
 		return nil, fsCode
 	}
 
-	logVital("Pack[FlowTracingID=%s,Digest=%s] was Sent Successfully", req.GetFlowTracingId(), req.Digest)
+	if logVital != nil {
+		logVital("Send Pack[FlowTracingID=%s,Digest=%s] Success.", req.GetFlowTracingId(), req.Digest)
+	}
 
 	replyPack, fsCode := session.RecvPack(deadline)
 	if !fsCode.Finished() {

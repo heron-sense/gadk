@@ -147,7 +147,7 @@ func (session *IslandSession) RecvPack(deadline time.Time) (FlowPack, fsc.FlowSt
 		return nil, fsc.FlowRecvErrorOccurred
 	}
 
-	pk, fCode := ParseHeader(buf)
+	pk, fCode := ParseMeta(buf)
 	if !fCode.Finished() {
 		if logError != nil {
 			logError("parse header err:%s", fCode)

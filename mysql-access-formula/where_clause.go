@@ -1,4 +1,4 @@
-package mysql_delegate
+package maf
 
 type Clause struct {
 }
@@ -24,6 +24,5 @@ func (ff *FormField) Gt(value interface{}) *Clause {
 func (ff *FormField) Gte(value interface{}) *Clause {
 	return nil
 }
-
 
 */

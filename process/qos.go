@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func (i *island) tooLate(tm time.Time, profile *subroutineProfile, pack *lrfCall.Header) bool {
+func (i *island) tooLate(tm time.Time, profile *subroutineProfile, pack *lrfCall.PackMeta) bool {
 	profile.mutex.RLock()
 	defer profile.mutex.RUnlock()
 	if uint64(tm.UnixNano()/1e6)-pack.InitiatedTime >= uint64(pack.RemainingTime) {

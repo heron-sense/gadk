@@ -37,7 +37,7 @@ func (ctx *FlowContext) Reply(pk FlowPack, data []byte) (FlowPack, fsc.FlowState
 	}
 
 	reply := &_pack{
-		Header: Header{
+		PackMeta: PackMeta{
 			FlowTracingId:   [FlowTracingIdLength]byte{},
 			TrackSequence:   pk.GetTrackSequence(),
 			InitiatedTime:   uint64(ctx.InitiateTime.UnixNano() / 1e6),
@@ -65,7 +65,7 @@ func NewPack(fCtx *FlowContext, directive string, stateCode uint32, data []byte,
 	length := uint32(len(data))
 	nowMs := fCtx.InitiateTime.UnixNano() / 1e6
 	pack := &_pack{
-		Header: Header{
+		PackMeta: PackMeta{
 			FlowTracingId:  fCtx.FlowTracingId,
 			TrackSequence:  0,
 			InitiatedTime:  uint64(nowMs),

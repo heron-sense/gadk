@@ -11,7 +11,7 @@ import (
 )
 
 type _pack struct {
-	Header
+	PackMeta
 	DstAddr       string
 	SrcAddr       string
 	flowTracingId string
@@ -42,7 +42,7 @@ func (pk *_pack) GenTrack(span uint8) uint32 {
 }
 
 func (pk *_pack) GetSha1Padding() []byte {
-	return pk.Header.PackSignature[:]
+	return pk.PackMeta.PackSignature[:]
 }
 
 func (pk *_pack) GetData() []byte {
@@ -57,14 +57,14 @@ func (pk *_pack) GetExtensionLen() uint32 {
 }
 
 func (pk *_pack) GetDirectiveLen() uint32 {
-	return uint32(pk.Header.DirectiveNotes)
+	return uint32(pk.PackMeta.DirectiveNotes)
 }
 
 func (pk *_pack) GetDataLen() uint32 {
 	var length uint32
 	if pk != nil {
-		for pos := 0; pos < len(pk.Header.DataLength); pos++ {
-			length = length<<8 | uint32(pk.Header.DataLength[pos])
+		for pos := 0; pos < len(pk.PackMeta.DataLength); pos++ {
+			length = length<<8 | uint32(pk.PackMeta.DataLength[pos])
 		}
 	}
 	return length
@@ -121,7 +121,7 @@ func (pk *_pack) CalRemainingTime(nowMs uint64) (uint16, bool) {
 }
 
 func (pk *_pack) GetInitiatedTime() uint64 {
-	return pk.Header.InitiatedTime
+	return pk.PackMeta.InitiatedTime
 }
 
 func GenTrackID(trackID uint32, spanID uint8) uint32 {
@@ -134,7 +134,7 @@ func GenTrackID(trackID uint32, spanID uint8) uint32 {
 func (pk *_pack) Serialize() ([]byte, fsc.FlowStateCode) {
 	totalLength := int(PackHeaderLength) + len(pk.Directive) + len(pk.Data) + len(pk.Extension)
 	buf := bytes.NewBuffer(make([]byte, 0, totalLength))
-	if err := binary.Write(buf, binary.BigEndian, pk.Header); err != nil {
+	if err := binary.Write(buf, binary.BigEndian, pk.PackMeta); err != nil {
 		logger.Error("write err:%s", err)
 		return nil, fsc.FlowEncodeFailed
 	}
@@ -158,7 +158,7 @@ func (pk *_pack) GenReply(directive []byte, initiatedTime uint64, remainingTime 
 		return nil, fsc.FlowDataLength
 	}
 
-	replyHeader := &Header{
+	replyHeader := &PackMeta{
 		FlowTracingId:   pk.FlowTracingId,
 		TrackSequence:   pk.TrackSequence,
 		InitiatedTime:   initiatedTime,

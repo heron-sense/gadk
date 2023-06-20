@@ -1,10 +1,10 @@
 module github.com/heron-sense/gadk
 
-go 1.14
-
+go 1.18
 
 require (
 	github.com/HdrHistogram/hdrhistogram-go v1.1.2 // indirect
+	github.com/go-sql-driver/mysql v1.6.0
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/uber/jaeger-client-go v2.30.0+incompatible
