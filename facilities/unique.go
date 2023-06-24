@@ -1,4 +1,4 @@
-package extension
+package facilities
 
 import (
 	"fmt"
@@ -208,9 +208,6 @@ func main() {
 		v33Elapse += time.Now().UnixNano() - begin
 
 		if v11 != v33 || v22 != v33 {
-			fmt.Printf("%b,%+v\n", v11, arr1)
-			fmt.Printf("%b,%+v\n", v22, arr2)
-			fmt.Printf("%b,%+v\n", v33, arr3)
 			panic("ff")
 		}
 	}

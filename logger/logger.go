@@ -99,9 +99,9 @@ func doWrite(rec *record) fsc.FlowStateCode {
 	bufMeta := [3]uintptr{strMeta[0], strMeta[1], strMeta[1]}
 	switch nWritten, err := logVolume.Write(*(*[]byte)(unsafe.Pointer(&bufMeta))); {
 	case err != nil:
-		stats.WriteErrorTimes++
+		stats.IoError.Bytes++
 	case nWritten != len(rec.serialized):
-		stats.WritePartialTimes++
+		stats.IoError.Bytes += int64(len(rec.serialized) - nWritten)
 	default:
 		currentVolumeSize += len(rec.serialized)
 	}

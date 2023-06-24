@@ -1,11 +1,20 @@
-package process
+package engine
 
 import (
 	lrfCall "github.com/heron-sense/gadk/rpc"
+	"sync"
 	"time"
 )
 
-func (i *island) tooLate(tm time.Time, profile *subroutineProfile, pack *lrfCall.PackMeta) bool {
+type subroutineProfile struct {
+	replyDirective []byte
+	mutex          sync.RWMutex
+	durationList   [35]uint64
+	avgDuration    uint64
+	appendPos      uint16
+}
+
+func tooLate(tm time.Time, profile *subroutineProfile, pack *lrfCall.PackMeta) bool {
 	profile.mutex.RLock()
 	defer profile.mutex.RUnlock()
 	if uint64(tm.UnixNano()/1e6)-pack.InitiatedTime >= uint64(pack.RemainingTime) {
@@ -14,7 +23,7 @@ func (i *island) tooLate(tm time.Time, profile *subroutineProfile, pack *lrfCall
 	return false
 }
 
-func (i *island) perf(begin, end time.Time, profile *subroutineProfile) {
+func perf(begin, end time.Time, profile *subroutineProfile) {
 	if profile == nil {
 		return
 	}

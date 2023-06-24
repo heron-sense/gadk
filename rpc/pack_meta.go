@@ -1,11 +1,8 @@
 package rpc
 
 import (
-	"bytes"
-	"encoding/binary"
 	fsc "github.com/heron-sense/gadk/flow-state-code"
 	"net/http"
-	"unsafe"
 )
 
 const (
@@ -60,28 +57,4 @@ type FlowPack interface {
 	GetSha1Padding() []byte
 	Serialize() ([]byte, fsc.FlowStateCode)
 	GenReply(directive []byte, initiatedTime uint64, remainingTime uint16, stateCode uint32, data []byte, extension []byte) ([]byte, fsc.FlowStateCode)
-}
-
-func GenTrackHeader(traceID [FlowTracingIdLength]byte, strategy Strategy) *PackMeta {
-	hdr := &PackMeta{
-		FlowTracingId: traceID,
-		TrackSequence: uint32(strategy),
-	}
-	hdr.TrackSequence <<= 30
-	return hdr
-}
-
-func ParseMeta(buf [PackHeaderLength]byte) (*_pack, fsc.FlowStateCode) {
-	pk := &_pack{}
-	err := binary.Read(bytes.NewReader(buf[:]), binary.BigEndian, &pk.PackMeta)
-	if err != nil {
-		if logError != nil {
-			logError("err:%s", err)
-		}
-		return nil, fsc.FlowDecodeFailed
-	}
-
-	bufMeta := pk.FlowTracingId[:]
-	pk.flowTracingId = *(*string)(unsafe.Pointer(&bufMeta))
-	return pk, fsc.FlowFinished
 }

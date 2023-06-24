@@ -1,4 +1,4 @@
-package extension
+package facilities
 
 func HeapSort(arr []int64) {
 	left := 0

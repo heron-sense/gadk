@@ -7,7 +7,6 @@ import (
 	lib_enhanced "github.com/heron-sense/gadk/extension"
 	fsc "github.com/heron-sense/gadk/flow-state-code"
 	"github.com/heron-sense/gadk/logger"
-	"net/http"
 )
 
 type _pack struct {
@@ -70,34 +69,6 @@ func (pk *_pack) GetDataLen() uint32 {
 	return length
 }
 
-func (pk *_pack) GetExtension() http.Header {
-	hdr := http.Header{}
-
-	var kPos, vPos int
-	for idx := 0; idx < len(pk.Extension); idx++ {
-		switch chr := pk.Extension[idx]; chr {
-		case '&':
-			if vPos > 0 {
-				key := string(pk.Extension[kPos : vPos-1])
-				val := string(pk.Extension[vPos:idx])
-				hdr.Set(key, val)
-			}
-			kPos = idx + 1
-			vPos = 0
-		case '=':
-			vPos = idx + 1
-			continue
-		}
-	}
-	if vPos > 0 {
-		key := string(pk.Extension[kPos : vPos-1])
-		val := string(pk.Extension[vPos:])
-		hdr.Set(key, val)
-	}
-
-	return hdr
-}
-
 func (pk *_pack) GetDirective() string {
 	if pk != nil {
 		return pk.Directive
@@ -108,6 +79,7 @@ func (pk *_pack) GetDirective() string {
 func (pk *_pack) GetRemainingTime() uint16 {
 	return pk.RemainingTime
 }
+
 func (pk *_pack) CalRemainingTime(nowMs uint64) (uint16, bool) {
 	if nowMs >= pk.InitiatedTime {
 		elapseMs := nowMs - pk.InitiatedTime

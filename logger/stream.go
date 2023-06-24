@@ -2,7 +2,6 @@ package logger
 
 import (
 	"fmt"
-	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -19,23 +18,36 @@ type record struct {
 	serialized string
 }
 
-type Dropped struct {
+type Stats struct {
 	Bytes int64 `json:"bytes"`
-	Lines int64 `json:"lines"`
+	Times int64 `json:"times"`
+}
+
+//go:generate msgp
+type StatGroup struct {
+	Fatal Stats `json:"fatal"`
+	Error Stats `json:"error"`
+	Alert Stats `json:"alert"`
+	Vital Stats `json:"vital"`
+	Debug Stats `json:"debug"`
 }
 
 type logStats struct {
-	Fatal Dropped `json:"dropped_fatal"`
-	Error Dropped `json:"dropped_error"`
-	Alert Dropped `json:"dropped_alert"`
-	Vital Dropped `json:"dropped_vital"`
-	Debug Dropped `json:"dropped_debug"`
+	Written    StatGroup
+	Failed     StatGroup
+	Redirected StatGroup
+	IoError    Stats  `json:"io_error"`
+	VolumeID   uint64 `json:"next_id"`
+}
 
-	Latency struct {
-	} `json:"latency"`
-	WritePartialTimes uint64 `json:"write_partial_times"`
-	WriteErrorTimes   uint64 `json:"write_error_times"`
-	VolumeID          uint64 `json:"next_id"`
+func GetStats(group string) StatGroup {
+	if group == "redirected" {
+		return stats.Redirected
+	} else if group == "failed" {
+		return stats.Failed
+	} else {
+		return stats.Written
+	}
 }
 
 func genRecord(level string, format string, argv ...interface{}) *record {
@@ -48,19 +60,21 @@ func genRecord(level string, format string, argv ...interface{}) *record {
 	}
 	r.time = time.Now()
 
-	argList := []interface{}{r.time.Format("Jan.02 15:04:05.000000"), level}
+	argList := make([]interface{}, 0, len(argv)+6)
+	argList = append(argList, r.time.Format("2006-01-02 15:04:05.000000"))
 	if pc, file, line, ok := runtime.Caller(2); ok {
-		format = "%s-%s(%s,%s:%d): " + format + "\n"
-		file = path.Base(file)
+		//2023-06-24 09:20:26.524492-DEBUG(parsereq,engine.go:182): new pack:%!s(MISSING)
+		format = "%s[%s:%s:%d]-%s:" + format + "\n"
+		file = strings.Split(file, "heron-sense/")[1]
 		function := filepath.Ext(runtime.FuncForPC(pc).Name())
-		function = strings.TrimLeft(function, ".")
-		argList = append(argList, function, file, line)
-		argList = append(argList, argv...)
+
+		argList = append(argList, file, function, line, level)
 	} else {
-		format = "%s %s " + format + "\n"
-		argList = append(argList, argv...)
+		argList = append(argList, level)
+		format = "%s-%s:" + format + "\n"
 	}
 
+	argList = append(argList, argv...)
 	r.serialized = fmt.Sprintf(format, argList...)
 
 	return r
